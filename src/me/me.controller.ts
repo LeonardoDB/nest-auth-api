@@ -8,7 +8,7 @@ import { User } from '../user/user.entity';
 @Controller()
 export class MeController {
   /**
-   * Get profile data
+   * Get profile data of the currently authenticated user
    */
   @Get('me')
   async getProfile(@CurrentUser() currentUser: User): Promise<User> {
