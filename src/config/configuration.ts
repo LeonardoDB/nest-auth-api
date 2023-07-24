@@ -15,4 +15,9 @@ export default () => ({
     username: process.env.DATABASE_USERNAME || 'root',
     password: process.env.DATABASE_PASSWORD || 'root',
   },
+  auth: {
+    secret: process.env.JWT_SECRET,
+    accessTokenExpireIn: '60s',
+    refreshTokenExpireIn: '7d',
+  },
 });

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 import { User } from '../../user/user.entity';
@@ -15,17 +16,31 @@ export class SignInCommand {
   }
 }
 
+// ---- SignedIn ----
+export class SignedIn {
+  constructor(public readonly accessToken: string, public readonly refreshToken: string) {}
+}
+
 @Injectable()
 export class SignInUseCase {
+  private readonly refreshTokenExpireIn: string = this.configService.get<string>(
+    'auth.refreshTokenExpireIn',
+  );
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly validateCredentialUseCase: ValidateCredentialUseCase,
+    private readonly configService: ConfigService,
   ) {}
 
-  async exec(cmd: SignInCommand): Promise<string> {
+  async exec(cmd: SignInCommand): Promise<SignedIn> {
     const user: User = await this.validateCredentialUseCase.exec(cmd);
+
     const payload: UserPayload = this.buildPayload(user);
-    return this.generateAccessToken(payload);
+    const accessToken: string = this.generateAccessToken(payload);
+    const refreshToken: string = this.generateRefreshToken(payload);
+
+    return new SignedIn(accessToken, refreshToken);
   }
 
   private buildPayload(user: User): UserPayload {
@@ -33,6 +48,10 @@ export class SignInUseCase {
   }
 
   private generateAccessToken(payload: UserPayload): string {
-    return this.jwtService.sign(payload, { secret: process.env.JWT_SECRET });
+    return this.jwtService.sign(payload);
+  }
+
+  private generateRefreshToken(payload: UserPayload): string {
+    return this.jwtService.sign(payload, { expiresIn: this.refreshTokenExpireIn });
   }
 }
